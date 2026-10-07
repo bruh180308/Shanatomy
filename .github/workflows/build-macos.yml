@@ -44,7 +44,7 @@ jobs:
       - name: Build self-contained application
         run: |
           RES="$PWD/build-input/Shanatomy-MacOS/Shanatomy Mac.app/Contents/Resources"
-          python -m PyInstaller --noconfirm --clean --onefile --windowed --target-arch arm64 --name ShanatomyMac --osx-bundle-identifier vn.hungle.shanatomy.mac --icon "$RES/icon.icns" --add-data "$RES/assets:assets" --distpath native-dist --workpath native-work --specpath native-work "$RES/cavi_mac.py"
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --target-arch arm64 --hidden-import platform --name ShanatomyMac --osx-bundle-identifier vn.hungle.shanatomy.mac --icon "$RES/icon.icns" --add-data "$RES/assets:assets" --distpath native-dist --workpath native-work --specpath native-work "$RES/cavi_mac.py"
           mv native-dist/ShanatomyMac.app 'native-dist/Shanatomy Mac.app'
           python "$RES/package_native.py" --app 'native-dist/Shanatomy Mac.app' --out artifacts/Shanatomy-MacOS-Native.zip --version 0.7.21
           codesign --verify --deep --strict --verbose=2 'native-dist/Shanatomy Mac.app'
