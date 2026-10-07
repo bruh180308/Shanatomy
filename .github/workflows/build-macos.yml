@@ -51,6 +51,7 @@ jobs:
           file 'native-dist/Shanatomy Mac.app/Contents/MacOS/ShanatomyMac' > artifacts/binary.txt
       - name: Verify packaged executable and create disk image
         run: |
+          RES="$PWD/build-input/Shanatomy-MacOS/Shanatomy Mac.app/Contents/Resources"
           'native-dist/Shanatomy Mac.app/Contents/MacOS/ShanatomyMac' --self-test --self-test-report "$PWD/artifacts/mac-self-test.json"
           python - <<'PY'
           import json
