@@ -37,6 +37,9 @@ jobs:
           RES='build-input/Shanatomy-MacOS/Shanatomy Mac.app/Contents/Resources'
           cp build-input/Shanatomy-MacOS/BUILD_TESTS/test_*.py "$RES/"
           mkdir -p artifacts
+          # macOS /var is an OS symlink. Give fixtures a physical temp path;
+          # keep production refusal of user-created symlinks unchanged.
+          export TMPDIR="$(python -c 'import tempfile,pathlib; print(pathlib.Path(tempfile.gettempdir()).resolve())')"
           (cd "$RES"; python -m unittest discover -p 'test_*.py' -v) > artifacts/mac-python-tests.log 2>&1
       - name: Build self-contained application
         run: |
