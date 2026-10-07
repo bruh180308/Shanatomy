@@ -1,0 +1,77 @@
+name: Build Shanatomy Apple Silicon
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify source and unpack
+        run: |
+          python - <<'PY'
+          import hashlib,pathlib,stat,zipfile
+          p=pathlib.Path('Shanatomy-MacOS-Source_0.7.21.zip')
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='46e8da6e902096c06377a8541f5758e72eb6ab1277f8a402c8a9b1bc80ecc594'
+          with zipfile.ZipFile(p) as z:
+              seen=set()
+              for item in z.infolist():
+                  name=pathlib.PurePosixPath(item.filename)
+                  assert not name.is_absolute() and '..' not in name.parts and '\\' not in item.filename
+                  assert item.filename not in seen;seen.add(item.filename)
+                  assert stat.S_IFMT(item.external_attr>>16) in (0,stat.S_IFREG,stat.S_IFDIR)
+              assert sum(i.file_size for i in z.infolist())<300*1024*1024
+              z.extractall('build-input')
+          PY
+      - name: Install build dependencies
+        run: |
+          python -m pip install 'pyinstaller==6.22.3' 'cryptography==50.0.1'
+          python -c 'import tkinter,platform; assert platform.machine()=="arm64"; print(tkinter.Tcl().eval("info patchlevel"))'
+      - name: Test Mac logic on macOS
+        run: |
+          RES='build-input/Shanatomy-MacOS/Shanatomy Mac.app/Contents/Resources'
+          cp build-input/Shanatomy-MacOS/BUILD_TESTS/test_*.py "$RES/"
+          mkdir -p artifacts
+          (cd "$RES"; python -m unittest discover -p 'test_*.py' -v) > artifacts/mac-python-tests.log 2>&1
+      - name: Build self-contained application
+        run: |
+          RES='build-input/Shanatomy-MacOS/Shanatomy Mac.app/Contents/Resources'
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --target-arch arm64 --name ShanatomyMac --osx-bundle-identifier vn.hungle.shanatomy.mac --icon "$RES/icon.icns" --add-data "$RES/assets:assets" --distpath native-dist --workpath native-work --specpath native-work "$RES/cavi_mac.py"
+          mv native-dist/ShanatomyMac.app 'native-dist/Shanatomy Mac.app'
+          python "$RES/package_native.py" --app 'native-dist/Shanatomy Mac.app' --out artifacts/Shanatomy-MacOS-Native.zip --version 0.7.21
+          codesign --verify --deep --strict --verbose=2 'native-dist/Shanatomy Mac.app'
+          file 'native-dist/Shanatomy Mac.app/Contents/MacOS/ShanatomyMac' > artifacts/binary.txt
+      - name: Verify packaged executable and create disk image
+        run: |
+          'native-dist/Shanatomy Mac.app/Contents/MacOS/ShanatomyMac' --self-test --self-test-report "$PWD/artifacts/mac-self-test.json"
+          python - <<'PY'
+          import json
+          p=json.load(open('artifacts/mac-self-test.json'))
+          assert p['frozen'] and p['architecture']=='arm64' and p['assets_verified']
+          assert not p['app_opened'] and not p['cache_changed']
+          PY
+          mkdir -p dmg-root
+          cp -R 'native-dist/Shanatomy Mac.app' dmg-root/
+          ln -s /Applications dmg-root/Applications
+          printf 'Kéo Shanatomy Mac.app vào Applications, rồi mở Shanatomy. Gói tự chứa không cần Python. Bản ad-hoc chưa notarize: dùng quy trình Open Anyway của macOS nếu hệ thống yêu cầu. Không tắt Gatekeeper.\n' > dmg-root/HUONG_DAN.txt
+          hdiutil create -volname Shanatomy -srcfolder dmg-root -ov -format UDZO artifacts/Shanatomy-MacOS_0.7.21.dmg
+          hdiutil verify artifacts/Shanatomy-MacOS_0.7.21.dmg
+          shasum -a 256 artifacts/*.zip artifacts/*.dmg > artifacts/SHA256SUMS.txt
+      - name: Upload verified artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shanatomy-MacOS-Native-0.7.21
+          path: artifacts/
+          if-no-files-found: error
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shanatomy-MacOS-Build-Diagnostics
+          path: artifacts/
+          if-no-files-found: ignore
