@@ -16,8 +16,8 @@ jobs:
         run: |
           python - <<'PY'
           import hashlib,pathlib,stat,zipfile
-          p=pathlib.Path('Shanatomy-MacOS-Source_0.7.21.zip')
-          assert hashlib.sha256(p.read_bytes()).hexdigest()=='46e8da6e902096c06377a8541f5758e72eb6ab1277f8a402c8a9b1bc80ecc594'
+          p=pathlib.Path('Shanatomy-MacOS-Source_0.7.22.zip')
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='b3d666e3330c3760c1d6def0c6b4d4f6a4aae4f69ef7611d5687f7bb21fb3fe2'
           with zipfile.ZipFile(p) as z:
               seen=set()
               for item in z.infolist():
@@ -46,7 +46,7 @@ jobs:
           RES="$PWD/build-input/Shanatomy-MacOS/Shanatomy Mac.app/Contents/Resources"
           python -m PyInstaller --noconfirm --clean --onefile --windowed --target-arch arm64 --hidden-import platform --name ShanatomyMac --osx-bundle-identifier vn.hungle.shanatomy.mac --icon "$RES/icon.icns" --add-data "$RES/assets:assets" --distpath native-dist --workpath native-work --specpath native-work "$RES/cavi_mac.py"
           mv native-dist/ShanatomyMac.app 'native-dist/Shanatomy Mac.app'
-          python "$RES/package_native.py" --app 'native-dist/Shanatomy Mac.app' --out artifacts/Shanatomy-MacOS-Native.zip --version 0.7.21
+          python "$RES/package_native.py" --app 'native-dist/Shanatomy Mac.app' --out artifacts/Shanatomy-MacOS-Native.zip --version 0.7.22 --manifest-only
           codesign --verify --deep --strict --verbose=2 'native-dist/Shanatomy Mac.app'
           file 'native-dist/Shanatomy Mac.app/Contents/MacOS/ShanatomyMac' > artifacts/binary.txt
       - name: Verify packaged executable and create disk image
@@ -60,15 +60,27 @@ jobs:
           PY
           mkdir -p dmg-root
           cp -R 'native-dist/Shanatomy Mac.app' dmg-root/
+          cp artifacts/MAC_PACKAGE_MANIFEST.json dmg-root/
           ln -s /Applications dmg-root/Applications
           printf 'Kéo Shanatomy Mac.app vào Applications, rồi mở Shanatomy. Gói tự chứa không cần Python. Bản ad-hoc chưa notarize: dùng quy trình Open Anyway của macOS nếu hệ thống yêu cầu. Không tắt Gatekeeper.\n' > dmg-root/HUONG_DAN.txt
-          hdiutil create -volname Shanatomy -srcfolder dmg-root -ov -format UDZO artifacts/Shanatomy-MacOS_0.7.21.dmg
-          hdiutil verify artifacts/Shanatomy-MacOS_0.7.21.dmg
-          shasum -a 256 artifacts/*.zip artifacts/*.dmg > artifacts/SHA256SUMS.txt
+          hdiutil create -volname Shanatomy -srcfolder dmg-root -ov -format UDZO artifacts/Shanatomy-MacOS.dmg
+          hdiutil verify artifacts/Shanatomy-MacOS.dmg
+          PYTHONPATH="$RES" python - <<'PY'
+          import tempfile,pathlib,shutil,json
+          from mac_updater import extract_dmg,validate_bundle,bundle_kind
+          temp=pathlib.Path(tempfile.mkdtemp()).resolve()
+          try:
+              app=extract_dmg(pathlib.Path('artifacts/Shanatomy-MacOS.dmg').resolve(),temp/'verify.app')
+              assert bundle_kind(app)=='self-contained-app'
+              print('Actual DMG updater extraction, codesign and manifest: PASS')
+              pathlib.Path('artifacts/dmg-update-test.json').write_text(json.dumps({'passed':True,'version':'0.7.22','readonly_mount':True,'detached':True}))
+          finally:shutil.rmtree(temp)
+          PY
+          shasum -a 256 artifacts/*.dmg > artifacts/SHA256SUMS.txt
       - name: Upload verified artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Shanatomy-MacOS-Native-0.7.21
+          name: Shanatomy-MacOS-Native-0.7.22
           path: artifacts/
           if-no-files-found: error
       - name: Upload diagnostics on failure
