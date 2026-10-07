@@ -17,7 +17,7 @@ jobs:
           python - <<'PY'
           import hashlib,pathlib,stat,zipfile
           p=pathlib.Path('Shanatomy-MacOS-Source_0.7.22.zip')
-          assert hashlib.sha256(p.read_bytes()).hexdigest()=='b3d666e3330c3760c1d6def0c6b4d4f6a4aae4f69ef7611d5687f7bb21fb3fe2'
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='801d8b58dc037f46a0802417806d29517e149275ded35bf63f434f7f6ae75395'
           with zipfile.ZipFile(p) as z:
               seen=set()
               for item in z.infolist():
