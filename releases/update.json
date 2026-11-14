@@ -1,0 +1,23 @@
+{
+  "mode": "github_release",
+  "payload": {
+    "schema": 2,
+    "version": "2.0",
+    "build_id": "2.0-1f35f47e03a5",
+    "published_at": 1794680720,
+    "platform": "windows-x64",
+    "package_format": "exe",
+    "supported_app_version": "12.7.4.0",
+    "supported_app_versions": [
+      "12.7.4.0"
+    ],
+    "notes": "Shanatomy 2.0 (Native Rust + Tauri v2)",
+    "asset": {
+      "name": "Shanatomy-Windows.exe",
+      "url": "https://github.com/bruh180308/Shanatomy/releases/download/2.0/Shanatomy-Windows.exe",
+      "sha256": "1f35f47e03a5b1cf8d41aeb9b71539d26ebfb3a24fc65e92c457213f2e5a4b0c",
+      "size": 24844288
+    },
+    "mirrors": []
+  }
+}

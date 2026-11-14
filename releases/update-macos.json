@@ -1,0 +1,23 @@
+{
+  "mode": "github_release",
+  "payload": {
+    "schema": 2,
+    "version": "2.0",
+    "published_at": 1794630900,
+    "build_id": "2.0-1794630900",
+    "platform": "macos-universal",
+    "package_format": "zip",
+    "supported_app_version": "12.7.4.0",
+    "supported_app_versions": [
+      "12.7.4.0"
+    ],
+    "notes": "Shanatomy 2.0 (Native Rust + Tauri v2 Universal macOS)",
+    "mirrors": [],
+    "asset": {
+      "name": "Shanatomy-MacOS.zip",
+      "url": "https://github.com/bruh180308/Shanatomy/releases/download/2.0/Shanatomy-MacOS.zip",
+      "sha256": "ef6c36b65f3e4afdd636b78d2a1de2d62e9249cb029909214abacf915f200dd9",
+      "size": 53068907
+    }
+  }
+}
